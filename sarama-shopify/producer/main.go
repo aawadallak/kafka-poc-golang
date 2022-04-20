@@ -11,6 +11,19 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
+const (
+	bootstrapServers = "pkc-6ojv2.us-west4.gcp.confluent.cloud:9092"
+	securityProtocol = "SASL_SSL"
+	saslMechanisms   = "PLAIN"
+	saslUsername     = "2CXYJZKQ6HSN3SY7"
+	saslPassword     = "OADcN5+1AILtj/cmAvjoarbg8Vi+CFxxQu44NPtmJWWxm/3Jpltic0CP9pbZPmNu"
+	topicProducer    = "poc-kafka-schema-registry"
+
+	schemaRegistryURL = "https://psrc-q8qx7.us-central1.gcp.confluent.cloud"
+	schemaBasicUser   = "QOVTQR5SWF5WZKNF"
+	schemaBasicPass   = "UxzuZ9rY/tSiKeTgz/TEZ7tUQ1hha+ZovzCYSwU8lg83WqvTLD2GbtlPyBQS1F9+"
+)
+
 type ComplexType struct {
 	ID string `json:"id"`
 }
@@ -27,7 +40,19 @@ func main() {
 	}
 
 	id, _ := uuid.NewUUID()
-	record := NewRecord(ComplexType{ID: id.String()})
+	msg := ComplexType{ID: id.String()}
+
+	schema, err := RetrieveSchema(topicProducer + "-value")
+	if err != nil {
+		panic(err)
+	}
+
+	payload, err := HandleSchema(schema, msg)
+	if err != nil {
+		panic(err)
+	}
+
+	record := NewRecord(payload)
 
 	p, o, err := producer.SendMessage(record)
 	if err != nil {
@@ -67,7 +92,12 @@ func JsonResolver(schema *srclient.Schema, payload []byte) ([]byte, error) {
 	return payload, nil
 }
 
-func HandleSchema(schema *srclient.Schema, payload []byte) ([]byte, error) {
+func HandleSchema(schema *srclient.Schema, value any) ([]byte, error) {
+	payload, err := json.Marshal(value)
+	if err != nil {
+		panic(err)
+	}
+
 	switch schema.SchemaType().String() {
 	case srclient.Avro.String():
 		return AvroResolver(schema, payload)
@@ -78,17 +108,11 @@ func HandleSchema(schema *srclient.Schema, payload []byte) ([]byte, error) {
 	}
 }
 
-func NewRecord(payload any) *sarama.ProducerMessage {
-	log.Println(payload)
-	value, err := json.Marshal(payload)
-	if err != nil {
-		panic(err)
-	}
-
+func NewRecord(payload []byte) *sarama.ProducerMessage {
 	var record []byte
 	record = append(record, byte(0))
 	record = append(record, make([]byte, 4)...)
-	record = append(record, value...)
+	record = append(record, payload...)
 
 	key, err := uuid.NewUUID()
 	if err != nil {
