@@ -33,28 +33,14 @@ func main() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt)
 
-	consumerMsg, consumerErr := consume(topics, consumer)
-
-	go func() {
-		for {
-			select {
-			case msg := <-consumerMsg:
-				fmt.Println("Received messages", string(msg.Key), string(msg.Value))
-			case consumerError := <-consumerErr:
-				fmt.Println("Received consumerError ", string(consumerError.Topic), string(consumerError.Partition), consumerError.Err)
-			}
-		}
-	}()
+	consume(topics, consumer)
 
 	<-signals
 	log.Println("finishing consumer")
 	os.Exit(1)
 }
 
-func consume(topics []string, master sarama.Consumer) (chan *sarama.ConsumerMessage, chan *sarama.ConsumerError) {
-	consumers := make(chan *sarama.ConsumerMessage)
-	errors := make(chan *sarama.ConsumerError)
-
+func consume(topics []string, master sarama.Consumer) {
 	for _, topic := range topics {
 		topic := topic
 
@@ -78,10 +64,8 @@ func consume(topics []string, master sarama.Consumer) (chan *sarama.ConsumerMess
 					for {
 						select {
 						case consumerError := <-consumer.Errors():
-							errors <- consumerError
 							fmt.Println("consumerError: ", consumerError.Err)
 						case msg := <-consumer.Messages():
-							consumers <- msg
 							fmt.Println("Got message on topic ", topic, msg.Value)
 						}
 					}
@@ -89,6 +73,4 @@ func consume(topics []string, master sarama.Consumer) (chan *sarama.ConsumerMess
 			}
 		}()
 	}
-
-	return consumers, errors
 }
