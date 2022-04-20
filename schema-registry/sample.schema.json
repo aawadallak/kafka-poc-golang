@@ -1,0 +1,22 @@
+{
+    "$id": "https://mycompany.com/myrecord",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "description": "Json schema for PoC",
+    "properties": {
+      "msg": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "id": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "id"
+    ],
+    "title": "Example-Test-Schema-JSON",
+    "type": "object"
+  }

@@ -1,0 +1,9 @@
+{
+    "type": "record",
+    "name": "MyRecord",
+    "namespace": "com.mycompany",
+    "fields" : [
+      {"name": "id", "type": "string"},
+      {"name": "msg", "type": "string"}
+    ]
+  }
